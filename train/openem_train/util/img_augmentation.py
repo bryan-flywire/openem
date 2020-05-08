@@ -130,19 +130,21 @@ def blurred_by_downscaling(img, ratio):
     # Returns
         Blurred image.
     """
-    resampling = np.random.choice([cv2.INTER_NEAREST,
-                                   cv2.INTER_LANCZOS4,
-                                   cv2.INTER_LINEAR, # Bilinear
-                                   cv2.INTER_CUBIC, #Bicubic
+    ## Bryan: cv2.resize not functional, replacing with deprecated scipy for now ##
+    from scipy.misc import imresize
+    resampling = np.random.choice(['nearest',
+                                   'lanczos',
+                                   'bilinear',
+                                   'bicubic', 
     ])
 
     if ratio == 1:
         return img
 
-    width = img.shape[1]
-    height = img.shape[0]
-    small = cv2.resize(img, ratio, interpolation=resampling)
-    large = cv2.resize(small, size=(height, width)).astype(np.float32)/255.0
+    width = int(img.shape[1] * ratio)
+    height = int(img.shape[0])
+    small = imresize(img, (height, width), interp=resampling)
+    large = imresize(small, (img.shape[0], img.shape[1])).astype(np.float32)/255.0
     return large
 
 def resizeAndFill(image, desired_shape):
