@@ -22,7 +22,7 @@ import sys
 import glob
 import numpy as np
 import pandas as pd
-
+import cv2
 def _save_model(config, model):
     """Loads best weights and converts to protobuf file.
 
@@ -177,6 +177,7 @@ def predict(config):
     # Import deployment library.
     sys.path.append('../python')
     import openem
+    from openem import Detect
 
     # Make a dict to contain detection results.
     det_data = {
@@ -191,9 +192,8 @@ def predict(config):
     }
 
     # Initialize detector from deployment library.
-    detector = openem.Detector()
-    status = detector.Init(config.detect_model_path())
-    if not status == openem.kSuccess:
+    detector = Detect.SSDDetector(config.detect_model_path())
+    if not detector:
         raise IOError("Failed to initialize detector!")
 
     limit = None
@@ -213,22 +213,14 @@ def predict(config):
                 break
             else:
                 count = count + 1
-        # Load in image.
-        img = openem.Image()
-        status = img.FromFile(img_path)
-        if not status == openem.kSuccess:
-            raise IOError("Failed to load image {}".format(p))
 
+
+        img = cv2.imread(img_path)
         # Add image to processing queue.
-        status = detector.AddImage(img)
-        if not status == openem.kSuccess:
-            raise RuntimeError("Failed to add image for processing!")
+        detector.addImage(img)
 
         # Process the loaded image.
-        detections = openem.VectorVectorDetection()
-        status = detector.Process(detections)
-        if not status == openem.kSuccess:
-            raise RuntimeError("Failed to process image {}!".format(img_path))
+        detections = detector.process()
 
         # Write detection to dict.
         for dets in detections:
