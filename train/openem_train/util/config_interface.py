@@ -430,7 +430,8 @@ class ConfigInterface:
         """
         patt = os.path.join(self.train_rois_dir(), '**', '*.jpg')
         patt2 = os.path.join(self.train_rois_dir(), '**', '*.png')
-        return glob.glob(patt, recursive=True).extend(glob.glob(patt2, recursive=True))
+        ## Bryan: extending array with empty array returns NONE
+        return glob.glob(patt, recursive=True)+(glob.glob(patt2, recursive=True))
 
     def train_dets(self):
         """Returns list of all training detection images.
