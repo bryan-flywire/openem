@@ -34,6 +34,8 @@ from cv2 import VideoCapture
 from cv2 import imwrite
 import progressbar
 
+import numpy as np
+
 # Current value for multi-processed loops
 current=Value(c_longlong, 0)
 
@@ -112,17 +114,17 @@ def extract_rois(config):
     """
     sys.path.append('../python')
     import openem
+    import cv2
 
     def _extract_roi(paths):
         img_path, roi_path = paths
-        img = openem.Image()
-        status = img.FromFile(img_path)
-        if status != openem.kSuccess:
-            print("Failed to read image {}".format(img_path))
-        else:
-            roi = openem.Rectify(img, ((x1, y1), (x2, y2)))
-            print("Saving ROI to: {}".format(roi_path))
-            roi.ToFile(roi_path)
+        img = cv2.imread(img_path)
+        #roi = openem.Rectify(img, ((x1, y1), (x2, y2)))
+        
+        roi = np.copy(img[int(y1):int(y2),int(x1):int(x2)])
+        print("Saving ROI to: {}".format(roi_path))
+        #roi.ToFile(roi_path)
+        cv2.imwrite(roi_path, roi)
 
     # Create directories to store ROIs.
     os.makedirs(config.train_rois_dir(), exist_ok=True)

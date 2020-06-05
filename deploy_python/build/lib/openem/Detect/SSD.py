@@ -33,20 +33,12 @@ class SSDDetector(ImageModel):
 
         Returns a list of Detection (or None if batch is empty)
         """
-
-        tf.compat.v1.disable_eager_execution()
-
         batch_result = super(SSDDetector, self).process()
         if batch_result is None:
             return batch_result
+
         batch_detections=[]
-        
-
         # Split out the tensor into bounding bboxes per image
-        #print(tf.config.list_physical_devices('GPU'))
-        #tf.debugging.set_log_device_placement(True)
-        #with tf.device('/GPU:0'):
-
         for image_idx,image_result in enumerate(batch_result):
             image_dims=self._imageSizes[image_idx]
             pred_stop = 4
@@ -61,31 +53,22 @@ class SSDDetector(ImageModel):
             scores=np.zeros(loc.shape[0])
             class_index=np.zeros(loc.shape[0])
 
-            #detections = []
             for idx,r in enumerate(conf):
                 _,maxScore,__,maxIdx = cv2.minMaxLoc(r[1:])
                 scores[idx] = maxScore
                 class_index[idx] = maxIdx[1] + 1 # +1 for background class
-                '''
-                detection = Detection(
-                    location = boxes[idx],
-                    confidence = scores[idx],
-                    species = class_index[idx],
-                    frame = None,
-                    video_id = None)
-                detections.append(detection)
-                '''
-            '''
-            print()
+                        print()
             print("================================================================")
             print("Boxes: {}  {} ".format(str(type(boxes)), str(boxes)))
             print("================================================================")
             print()
-            '''
-            indices = tf.image.non_max_suppression(boxes, scores, 200, 0.01, 0.45)
+            indices = tf.image.non_max_suppression(boxes,
+                                                   scores,
+                                                   200,
+                                                   0.01,
+                                                   0.45)
             detections = []
-
-            for idx in indices.eval(session=self.tf_session):
+            for idx in indices.numpy(session=self.tf_session):
                 detection = Detection(
                     location = boxes[idx],
                     confidence = scores[idx],
@@ -93,12 +76,12 @@ class SSDDetector(ImageModel):
                     frame = None,
                     video_id = None)
                 detections.append(detection)
-            
+
             def get_confidence(detection):
                 return detection.confidence
 
             detections.sort(key=get_confidence, reverse=True)
-            #print(len(detections))
+
             batch_detections.append(detections)
         # Clean up scale factors and return the list
         self._imageSizes = None
